@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "813736249482",
+    "project_id": "legally-ai3",
+    "storage_bucket": "legally-ai3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813736249482:android:80b915a350cfd527798573",
+        "android_client_info": {
+          "package_name": "com.example.legallyai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1X6jfg3drgTjXnlY2Wa9_BkdASRqVBro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813736249482:android:3124d44d9f4856f3798573",
+        "android_client_info": {
+          "package_name": "com.example.legallyai_web_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1X6jfg3drgTjXnlY2Wa9_BkdASRqVBro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813736249482:android:0af6fc76007cdda1798573",
+        "android_client_info": {
+          "package_name": "com.example.richtexteditor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1X6jfg3drgTjXnlY2Wa9_BkdASRqVBro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
