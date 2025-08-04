@@ -4,6 +4,7 @@ import 'package:legallyai/components/dark_mode.dart';
 import 'package:legallyai/components/light_mode.dart';
 import 'package:legallyai/firebase_options.dart';
 import 'package:legallyai/provider/theme_provider.dart';
+import 'package:legallyai/screens/auth_wrapper.dart';
 import 'package:legallyai/screens/login_screen.dart';
 import 'package:legallyai/screens/main_screen.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp( 
+  runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
       child: const MyApp(),
@@ -28,12 +29,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-      
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'LegallyAI',
           theme: legallyAiTheme,
-          home: LoginScreen(),
+          home: const AuthWrapper(),
         );
       },
     );
