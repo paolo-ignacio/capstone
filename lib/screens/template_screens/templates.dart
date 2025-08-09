@@ -21,7 +21,8 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
   List<Map<String, dynamic>> recentTemplates = [];
   bool isLoading = true;
   final List<String> categories = ['nda', 'employment', 'contract', 'others'];
-  String selectedCategory = 'nda';
+  bool _initialized = false;
+  String? selectedCategory;
 
   @override
   void initState() {
@@ -93,300 +94,9 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Recent Files",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                            color: Color(0xFF1C1C2E))),
-                    const SizedBox(height: 4),
-                    Container(height: 2, width: 40, color: Color(0xFFD4AF37)),
-                  ],
-                ),
-                const Gap(12),
-                SizedBox(
-                  height: 130,
-                  child: recentTemplates.isEmpty
-                      ? Center(
-                          child: Text(
-                            "No recent templates found.",
-                            style: TextStyle(
-                                color: Colors.grey[600], fontSize: 16),
-                          ),
-                        )
-                      : StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(FirebaseAuth.instance.currentUser?.uid)
-                              .collection('recent_templates')
-                              .orderBy('createdAt', descending: true)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            print(FirebaseAuth.instance.currentUser?.uid);
-
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-
-                            if (!snapshot.hasData ||
-                                snapshot.data!.docs.isEmpty) {
-                              return Center(
-                                child: Text(
-                                  "No recent templates found.",
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 16),
-                                ),
-                              );
-                            }
-
-                            final recentTemplates = snapshot.data!.docs;
-
-                            return SizedBox(
-                                height: 130,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: recentTemplates.length > 5
-                                      ? 6 // 5 + 1 for "See All"
-                                      : recentTemplates.length,
-                                  itemBuilder: (_, index) {
-                                    if (index == 5 &&
-                                        recentTemplates.length > 5) {
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    RecentFileScreen()),
-                                          );
-                                        },
-                                        child: Container(
-                                          width: 117,
-                                          height: 107,
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color.fromARGB(
-                                                    255, 82, 82, 125),
-                                                const Color(0xFF3A3A59)
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .withOpacity(0.08),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 5),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white
-                                                        .withOpacity(0.1),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.file_copy_rounded,
-                                                    color: Colors.white,
-                                                    size: 36,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                const Text(
-                                                  "See All",
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                    letterSpacing: 0.4,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    final doc = recentTemplates[index];
-                                    final data =
-                                        doc.data() as Map<String, dynamic>;
-                                    final cleanedTitle = data['title']
-                                        .replaceAll(
-                                            RegExp(r'\.(docx|pdf)$'), '');
-                                    final title = cleanedTitle ?? 'Untitled';
-                                    final createdAt =
-                                        data['createdAt'] as Timestamp?;
-                                    final dateStr = createdAt != null
-                                        ? timeAgo(createdAt.toDate())
-                                        : 'Unknown date';
-
-                                    return GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                CustomizeTemplateScreen(
-                                              fileName: title,
-                                              content: data['content'] ?? [],
-                                              template: data,
-                                              docId: doc.id,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        width: 117,
-                                        height: 107,
-                                        margin:
-                                            const EdgeInsets.only(right: 12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.05),
-                                              blurRadius: 6,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Gap(8),
-                                            Expanded(
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4),
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(0),
-                                                  child:
-                                                      quill.QuillEditor.basic(
-                                                    controller:
-                                                        quill.QuillController(
-                                                      document: quill.Document
-                                                          .fromJson(
-                                                              data['content'] ??
-                                                                  []),
-                                                      selection:
-                                                          const TextSelection
-                                                              .collapsed(
-                                                              offset: 0),
-                                                    ),
-                                                    config:
-                                                        quill.QuillEditorConfig(
-                                                      //readOnly: true,
-                                                      expands: true,
-                                                      padding: EdgeInsets.zero,
-                                                      showCursor: false,
-                                                      scrollable: true,
-                                                      placeholder: '',
-                                                      customStyles:
-                                                          quill.DefaultStyles(
-                                                        paragraph: quill
-                                                            .DefaultTextBlockStyle(
-                                                          const TextStyle(
-                                                              fontSize: 3,
-                                                              color: Colors
-                                                                  .black87),
-                                                          const quill
-                                                              .HorizontalSpacing(
-                                                              0, 0),
-                                                          const quill
-                                                              .VerticalSpacing(
-                                                              0, 0),
-                                                          const quill
-                                                              .VerticalSpacing(
-                                                              0, 0),
-                                                          null,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Container(
-                                                width: double.infinity,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 0),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF1C1C2E),
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                    bottomLeft:
-                                                        Radius.circular(12),
-                                                    bottomRight:
-                                                        Radius.circular(12),
-                                                  ),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      title,
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 14,
-                                                        color: Colors.white,
-                                                      ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      maxLines: 1,
-                                                    ),
-                                                    Text(
-                                                      dateStr,
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.white70,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ));
-                          },
-                        ),
-                ),
-                const Gap(10),
-                const Divider(
-                    thickness: 1.5, color: Color.fromRGBO(28, 28, 46, 0.1)),
+                (FirebaseAuth.instance.currentUser?.isAnonymous ?? true)
+                    ? SizedBox.shrink()
+                    : buildRecentTemplates(),
                 const Gap(10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,26 +114,43 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                           .collection('legal_templates')
                           .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          final allDocs = snapshot.data!.docs;
-                          final categorySet = allDocs
-                              .map((doc) => doc['category']?.toString())
-                              .whereType<String>()
-                              .toSet();
-                          final categories = categorySet.toList();
+                        final user = FirebaseAuth.instance.currentUser;
+                        final isGuest = user?.isAnonymous ?? true;
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              buildCategoryChips(categories),
-                              const SizedBox(height: 16),
-                              buildTemplateGrid(allDocs), // Filtered if needed
-                            ],
-                          );
-                        } else {
+                        if (!snapshot.hasData || snapshot.data == null) {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
+
+                        final allTemplates = snapshot.data!.docs;
+
+                        final accessibleTemplates = allTemplates.where((doc) {
+                          final access = doc['access']?.toString() ?? 'Guest';
+                          return !isGuest || access == 'Guest';
+                        }).toList();
+
+                        final categories = accessibleTemplates
+                            .map((doc) =>
+                                doc['category']?.toString() ?? 'Uncategorized')
+                            .toSet()
+                            .toList()
+                          ..sort();
+
+                        if (!_initialized &&
+                            selectedCategory == null &&
+                            categories.isNotEmpty) {
+                          selectedCategory = categories.first;
+                          _initialized = true;
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildCategoryChips(categories),
+                            const SizedBox(height: 16),
+                            buildTemplateGrid(accessibleTemplates),
+                          ],
+                        );
                       },
                     )
                   ],
@@ -434,6 +161,263 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget buildRecentTemplates() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Recent Files",
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: Color(0xFF1C1C2E))),
+        const SizedBox(height: 4),
+        Container(height: 2, width: 40, color: Color(0xFFD4AF37)),
+        const Gap(12),
+        SizedBox(
+          height: 130,
+          child: recentTemplates.isEmpty
+              ? Center(
+                  child: Text(
+                    "No recent templates found.",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                  ),
+                )
+              : StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser?.uid)
+                      .collection('recent_templates')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    print(FirebaseAuth.instance.currentUser?.uid);
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Center(
+                        child: Text(
+                          "No recent templates found.",
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 16),
+                        ),
+                      );
+                    }
+
+                    final recentTemplates = snapshot.data!.docs;
+
+                    return SizedBox(
+                        height: 130,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: recentTemplates.length > 5
+                              ? 6 // 5 + 1 for "See All"
+                              : recentTemplates.length,
+                          itemBuilder: (_, index) {
+                            if (index == 5 && recentTemplates.length > 5) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => RecentFileScreen()),
+                                  );
+                                },
+                                child: Container(
+                                  width: 117,
+                                  height: 107,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color.fromARGB(255, 82, 82, 125),
+                                        const Color(0xFF3A3A59)
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.file_copy_rounded,
+                                            color: Colors.white,
+                                            size: 36,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        const Text(
+                                          "See All",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final doc = recentTemplates[index];
+                            final data = doc.data() as Map<String, dynamic>;
+                            final cleanedTitle = data['title']
+                                .replaceAll(RegExp(r'\.(docx|pdf)$'), '');
+                            final title = cleanedTitle ?? 'Untitled';
+                            final createdAt = data['createdAt'] as Timestamp?;
+                            final dateStr = createdAt != null
+                                ? timeAgo(createdAt.toDate())
+                                : 'Unknown date';
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => CustomizeTemplateScreen(
+                                      fileName: title,
+                                      content: data['content'] ?? [],
+                                      template: data,
+                                      docId: doc.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 117,
+                                height: 107,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Gap(8),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(0),
+                                          child: quill.QuillEditor.basic(
+                                            controller: quill.QuillController(
+                                              document: quill.Document.fromJson(
+                                                  data['content'] ?? []),
+                                              selection:
+                                                  const TextSelection.collapsed(
+                                                      offset: 0),
+                                            ),
+                                            config: quill.QuillEditorConfig(
+                                              //readOnly: true,
+                                              expands: true,
+                                              padding: EdgeInsets.zero,
+                                              showCursor: false,
+                                              scrollable: true,
+                                              placeholder: '',
+                                              customStyles: quill.DefaultStyles(
+                                                paragraph:
+                                                    quill.DefaultTextBlockStyle(
+                                                  const TextStyle(
+                                                      fontSize: 3,
+                                                      color: Colors.black87),
+                                                  const quill.HorizontalSpacing(
+                                                      0, 0),
+                                                  const quill.VerticalSpacing(
+                                                      0, 0),
+                                                  const quill.VerticalSpacing(
+                                                      0, 0),
+                                                  null,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 0),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1C1C2E),
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              title,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                            Text(
+                                              dateStr,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ));
+                  },
+                ),
+        ),
+        const Gap(10),
+        const Divider(thickness: 1.5, color: Color.fromRGBO(28, 28, 46, 0.1)),
+      ],
     );
   }
 
@@ -458,10 +442,25 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
   }
 
   Widget buildTemplateGrid(List<QueryDocumentSnapshot> templates) {
-    final filteredTemplates = selectedCategory != null &&
-            selectedCategory != 'Others'
-        ? templates.where((doc) => doc['category'] == selectedCategory).toList()
-        : templates;
+    final user = FirebaseAuth.instance.currentUser;
+
+    final bool isGuest = user?.isAnonymous ?? true;
+
+    final accessibleTemplates = templates.where((doc) {
+      final access = doc['access']?.toString() ?? 'Guest';
+      if (isGuest) {
+        return access == 'Guest';
+      } else {
+        return true; // Allow all templates for signed-in users
+      }
+    }).toList();
+
+    final filteredTemplates =
+        selectedCategory != null && selectedCategory != 'Others'
+            ? accessibleTemplates
+                .where((doc) => doc['category'] == selectedCategory)
+                .toList()
+            : accessibleTemplates;
 
     final displayTemplates = filteredTemplates.length > 9
         ? filteredTemplates.take(9).toList()
@@ -495,7 +494,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => TemplateListScreen(
-                    category: selectedCategory,
+                    category: selectedCategory!,
                   ),
                 ),
               );
@@ -656,13 +655,27 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
     );
   }
 
+  List<String> extractAvailableCategories(
+      List<QueryDocumentSnapshot> templates) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isGuest = user?.isAnonymous ?? true;
+
+    // Only include templates that match access
+    final accessibleTemplates = templates.where((doc) {
+      final access = doc['access']?.toString() ?? 'Guest';
+      return !isGuest || access == 'Guest';
+    });
+
+    // Extract categories from accessible templates
+    final Set<String> availableCategories = accessibleTemplates
+        .map((doc) => doc['category']?.toString() ?? 'Uncategorized')
+        .toSet();
+
+    return availableCategories.toList();
+  }
+
   Widget buildCategoryChips(List<String> categories) {
     final topCategories = categories.take(5).toList();
-
-    // Ensure the first category is selected by default
-    if (selectedCategory == null && topCategories.isNotEmpty) {
-      selectedCategory = topCategories.first;
-    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -684,27 +697,28 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                   backgroundColor: const Color(0xFF5B5B6B),
                 ),
               )),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
-              label: const Text(
-                "Others",
-                style: TextStyle(color: Colors.white),
+          if (topCategories.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ChoiceChip(
+                label: const Text(
+                  "Others",
+                  style: TextStyle(color: Colors.white),
+                ),
+                selected: selectedCategory == "Others",
+                onSelected: (_) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CategoryListScreen(),
+                    ),
+                  );
+                },
+                selectedColor: const Color(0xFFD4AF37),
+                labelStyle: const TextStyle(color: Colors.black),
+                backgroundColor: Colors.grey.shade500,
               ),
-              selected: selectedCategory == "Others",
-              onSelected: (_) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CategoryListScreen(),
-                  ),
-                );
-              },
-              selectedColor: const Color(0xFFD4AF37),
-              labelStyle: const TextStyle(color: Colors.black),
-              backgroundColor: Colors.grey.shade500,
             ),
-          ),
         ],
       ),
     );

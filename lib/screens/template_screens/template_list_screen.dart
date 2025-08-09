@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'customize_template_screen.dart';
 
 class TemplateListScreen extends StatefulWidget {
@@ -15,6 +17,21 @@ class _TemplateListScreenState extends State<TemplateListScreen> {
   String _searchQuery = '';
   bool _showSearch = false;
   bool _sortAlphabetically = false;
+
+  Stream<QuerySnapshot> _getTemplatesStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    final isGuest = user == null || user.isAnonymous;
+
+    Query query = FirebaseFirestore.instance
+        .collection('legal_templates')
+        .where('category', isEqualTo: widget.category);
+
+    if (isGuest) {
+      query = query.where('access', isEqualTo: 'Guest');
+    }
+
+    return query.snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +74,7 @@ class _TemplateListScreenState extends State<TemplateListScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('legal_templates')
-            .where('category', isEqualTo: widget.category)
-            .snapshots(),
+        stream: _getTemplatesStream(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());

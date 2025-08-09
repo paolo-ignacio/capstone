@@ -16,13 +16,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   @override
   void dispose() {
     emailCtrl.dispose();
     passwordCtrl.dispose();
     super.dispose();
   }
+
   final keyForm = GlobalKey<FormState>();
   final emailCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
@@ -42,7 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
             key: keyForm,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              
               children: [
                 Center(
                   child: Image.asset(
@@ -53,18 +52,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const Gap(32),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16) ,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
-                     crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "Welcome back to LegallyAI!",
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          fontSize: 32
-                        ),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontSize: 32),
                         textAlign: TextAlign.start,
                       ),
                       const Gap(8),
@@ -72,10 +70,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           "Please login with your credentials",
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Color(0xFF868686),
-                          fontSize: 16
-                          ),
-                        
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Color(0xFF868686), fontSize: 16),
                         ),
                       ),
                     ],
@@ -101,7 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Gap(16),
                     TextFormField(
                       obscureText: hidePassword,
-                      decoration: setTextDecoration('Password', isPasswordField: true),
+                      decoration:
+                          setTextDecoration('Password', isPasswordField: true),
                       controller: passwordCtrl,
                       style: const TextStyle(color: Colors.black),
                       validator: (value) {
@@ -129,12 +126,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account?",
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: Colors.black),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => RegisterScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => RegisterScreen()),
                         );
                       },
                       child: Text(
@@ -155,7 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration setTextDecoration(String label, {bool isPasswordField = false}) {
+  InputDecoration setTextDecoration(String label,
+      {bool isPasswordField = false}) {
     final theme = Theme.of(context);
     return InputDecoration(
       hintText: label,
@@ -192,7 +192,6 @@ class _LoginScreenState extends State<LoginScreen> {
       hidePassword = !hidePassword;
     });
   }
-  
 
   void doLogin() async {
     if (!keyForm.currentState!.validate()) return;
@@ -207,7 +206,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailCtrl.text.trim(),
         password: passwordCtrl.text.trim(),
       );
@@ -215,17 +215,17 @@ class _LoginScreenState extends State<LoginScreen> {
       // Dismiss loading and navigate on success
       Navigator.pop(context); // Close the loading alert
       final userDoc = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(userCredential.user!.uid)
-      .get();
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
 
       if (userDoc.exists) {
-
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MainScreen( uid: userCredential.user!.uid, ),
+            builder: (context) => MainScreen(
+              uid: userCredential.user!.uid,
+            ),
           ),
         );
       } else {
@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       Navigator.pop(context); // Close the loading alert
 
-      String errorMessage =  "Invalid Credentials. Please try again.";
+      String errorMessage = "Invalid Credentials. Please try again.";
 
       QuickAlert.show(
         context: context,

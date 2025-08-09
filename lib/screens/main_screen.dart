@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,7 @@ import 'package:legallyai/screens/document_screens/summary.dart';
 import 'package:legallyai/screens/login_screen.dart';
 import 'package:legallyai/screens/profille_screen/profile_main.dart';
 import 'package:legallyai/screens/modal_bottom_sheets.dart';
+import 'package:legallyai/screens/template_screens/template_list_screen.dart';
 import 'package:legallyai/screens/template_screens/templates.dart';
 
 class MainScreen extends StatefulWidget {
@@ -103,7 +105,56 @@ class _MainScreenState extends State<MainScreen> {
               .add({
             'timestamp': FieldValue.serverTimestamp(),
           });
-          showImageOrFileBottomSheet(context, widget.uid!, chat_id.id);
+          if (FirebaseAuth.instance.currentUser?.isAnonymous ?? true) {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                backgroundColor: Colors.white,
+                title: const Text(
+                  "Login Required",
+                  style: TextStyle(color: Colors.black),
+                ),
+                content: const Text(
+                  "Please log in or sign up to use this feature.",
+                  style: TextStyle(color: Colors.black87),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Navigate to LoginScreen();
+                    },
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Color(0xFFD4AF37),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Navigate to LoginScreen();
+                    },
+                    child: const Text(
+                      "Log in",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            return;
+          } else {
+            showImageOrFileBottomSheet(context, widget.uid!, chat_id.id);
+          }
         },
         backgroundColor: const Color(0xFFD4AF37),
         shape: const CircleBorder(),
@@ -600,40 +651,98 @@ class _MainScreenState extends State<MainScreen> {
         : previewMessage;
   }
 
+  Future<List<String>> fetchFilteredCategories() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final isGuest = user == null || user.isAnonymous;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('legal_templates')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    final docs = snapshot.docs;
+    final Set<String> categories = {};
+
+    for (var doc in docs) {
+      final data = doc.data();
+      final access = data['access']?.toString() ?? 'Member';
+      final category = data['category']?.toString() ?? 'Uncategorized';
+
+      final isAllowed = isGuest ? access == 'Guest' : true;
+      if (!isAllowed) continue;
+
+      categories.add(category);
+      if (categories.length >= 3) break;
+    }
+
+    return categories.toList();
+  }
+
   Widget _buildSampleTemplates() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: textFiles.length,
-        itemBuilder: (_, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black12),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: colorsbf[index],
-                child: Icon(Icons.file_copy, color: colorsDocs[index]),
-              ),
-              title: Text(
-                textFiles[index],
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.black87),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios,
-                  color: Colors.black38, size: 18),
-              onTap: () {},
-            ),
-          );
-        },
-      ),
+    return FutureBuilder<List<String>>(
+      future: fetchFilteredCategories(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final categories = snapshot.data ?? [];
+        if (categories.isEmpty) {
+          return const Center(child: Text('No categories available.'));
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: categories.length,
+            itemBuilder: (_, index) {
+              final category = categories[index];
+              final bgColor = colorsbf[index % colorsbf.length];
+              final iconColor = colorsDocs[index % colorsDocs.length];
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black12),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: bgColor,
+                    child: Icon(Icons.folder, color: iconColor),
+                  ),
+                  title: Text(
+                    category,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: Colors.black87),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios,
+                      color: Colors.black38, size: 18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TemplateListScreen(
+                          category: category,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -682,7 +791,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     const Gap(10),
                     Text(
-                      fullName.isNotEmpty ? fullName : 'User',
+                      fullName.isNotEmpty ? fullName : 'Guest User',
                       style: Theme.of(context)
                           .textTheme
                           .bodyLarge
@@ -741,17 +850,20 @@ class _MainScreenState extends State<MainScreen> {
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
-                leading: const Icon(Icons.exit_to_app, color: Colors.white),
-                title: Text('Logout',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.white)),
-                onTap: () {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (_) => LoginScreen()));
-                },
-              ),
+                  leading: const Icon(Icons.exit_to_app, color: Colors.white),
+                  title: Text('Logout',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: Colors.white)),
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }),
             ],
           );
         },
@@ -819,7 +931,57 @@ class _MainScreenState extends State<MainScreen> {
                     .add({
                   'timestamp': FieldValue.serverTimestamp(),
                 });
-                showImageOrFileBottomSheet(context, widget.uid!, chat_id.id);
+                if (FirebaseAuth.instance.currentUser?.isAnonymous ?? true) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text(
+                        "Login Required",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                      content: const Text(
+                        "Please log in or sign up to use this feature.",
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            // Navigate to LoginScreen();
+                          },
+                          child: const Text(
+                            "Cancel",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Color(0xFFD4AF37),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => LoginScreen()));
+                          },
+                          child: const Text(
+                            "Log in",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                } else {
+                  showImageOrFileBottomSheet(context, widget.uid!, chat_id.id);
+                }
               } else if (index == 2) {
                 Navigator.push(
                   context,
