@@ -7,6 +7,7 @@ import 'package:flutter_quill/quill_delta.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:legallyai/screens/login_screen.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -217,6 +218,13 @@ class _CustomizeTemplateScreenState extends State<CustomizeTemplateScreen> {
   }
 
   void _handleMenuAction(String value) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || user.isAnonymous) {
+      _showLoginPrompt();
+      return;
+    }
+
     switch (value) {
       case 'preview':
         setState(() => _isEditing = false);
@@ -339,6 +347,54 @@ class _CustomizeTemplateScreenState extends State<CustomizeTemplateScreen> {
     }
   }
 
+  void _showLoginPrompt() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text(
+          "Login Required",
+          style: TextStyle(color: Colors.black),
+        ),
+        content: const Text(
+          "Please log in or sign up to use this feature.",
+          style: TextStyle(color: Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to LoginScreen();
+            },
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Color(0xFFD4AF37),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => LoginScreen()));
+            },
+            child: const Text(
+              "Log in",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cleanedTitle =
@@ -428,6 +484,11 @@ class _CustomizeTemplateScreenState extends State<CustomizeTemplateScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null || user.isAnonymous) {
+                            _showLoginPrompt();
+                            return;
+                          }
                           setState(() {
                             _isEditing = true;
                           });

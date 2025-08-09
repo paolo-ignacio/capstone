@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gap/gap.dart';
@@ -59,26 +60,40 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             .collection('legal_templates')
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          final user = FirebaseAuth.instance.currentUser;
+          final isGuest = user?.isAnonymous ?? true;
 
           final docs = snapshot.data!.docs;
-          final categorySet = <String>{};
 
-          for (var doc in docs) {
+          // ✅ Filter templates based on access
+          final accessibleTemplates = docs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            if (data.containsKey('category')) {
+            final access = data['access']?.toString() ?? 'Guest';
+            return !isGuest || access == 'Guest';
+          });
+
+          // ✅ Collect categories from accessible templates only
+          final Set<String> categorySet = {};
+          for (var doc in accessibleTemplates) {
+            final data = doc.data() as Map<String, dynamic>;
+            if (data.containsKey('category') && data['category'] != null) {
               categorySet.add(data['category']);
             }
           }
 
           var categories = categorySet.toList();
 
+          // ✅ Sort alphabetically if needed
           if (_sortAlphabetically) {
             categories
                 .sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
           }
 
+          // ✅ Apply search filter
           final filtered = categories.where((cat) {
             return cat.toLowerCase().contains(_searchQuery.toLowerCase());
           }).toList();
@@ -87,6 +102,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             return const Center(child: Text("No categories found."));
           }
 
+          // ✅ Render the list
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: filtered.length,

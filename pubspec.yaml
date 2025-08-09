@@ -58,6 +58,7 @@ dependencies:
   permission_handler: ^12.0.1
   vsc_quill_delta_to_html: ^1.0.5
   flutter_quill: ^11.4.2
+  flutter_localization: ^0.3.3
 
 dependency_overrides:
   quill_native_bridge_windows: 0.0.1
